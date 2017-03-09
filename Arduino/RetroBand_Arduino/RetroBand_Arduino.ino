@@ -60,6 +60,7 @@ void setup() {
 	uint8_t c;
 
 	Serial.begin(9600);
+  BTSerial.write( "Serial listo." );
 	Wire.begin();
 	BTSerial.begin(9600);  // set the data rate for the BT port
 

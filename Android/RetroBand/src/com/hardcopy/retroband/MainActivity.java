@@ -41,6 +41,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.res.Configuration;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -332,6 +333,23 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 		}
 	}
 	
+	public void procesarXYZ(int[] accel){
+		if(accel == null || accel.length < 3)
+			return;
+		
+		TextView txtView = (TextView)findViewById(R.id.text_indicador);
+		txtView.setText("Listo");
+		
+		if(accel[1] < 0){//Eje Y
+			txtView.setBackgroundColor(Color.parseColor("#FF0000"));
+		} else {
+			txtView.setBackgroundColor(Color.parseColor("#00FF00"));
+		}
+//		for(int i=3; i<accel.length; i+=3) {
+//			
+//		}
+	}
+	
 	
 	/*****************************************************
 	 *	Public classes
@@ -433,6 +451,7 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 				if(co != null) {
 					GraphFragment frg = (GraphFragment) mSectionsPagerAdapter.getItem(LLFragmentAdapter.FRAGMENT_POS_GRAPH);
 					frg.drawAccelData(co.mAccelData);
+					procesarXYZ(co.mAccelData);
 				}
 				break;
 			

@@ -16,7 +16,7 @@
 
 package com.hardcopy.retroband.fragments;
 
-import com.hardcopy.retroband.R;
+//import com.hardcopy.retroband.R;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -107,7 +107,6 @@ public class RenderingView extends View {
 	
 	private float mMaxValue = 0;
 	private float mVerticalScale = 1;		// Scale value to fit screen height
-	private TextView txtView = (TextView)findViewById(R.id.text_indicador);
 	
 	/**
 	 * Clear canvas. Initialize drawing point X
@@ -309,6 +308,15 @@ public class RenderingView extends View {
 		if(accel == null || accel.length < 3)
 			return;
 		
+		//txtView.setBackgroundColor(R.color.red1);
+//		try {
+//			//setContentView(R.layout.fragment_graph);
+//			TextView txtView = (TextView)findViewById(R.id.text_indicador);
+//			txtView.setText("Diego");
+//		} catch (Exception e) {
+//			// TODO: handle exception
+//		}
+		
 		if(bStart == true) {
 			PrevDrawingX = mCurrentDrawingX;
 			bStart = false;
@@ -316,11 +324,6 @@ public class RenderingView extends View {
 		}
 
 		for(int i=3; i<accel.length; i+=3) {
-			if(accel[i] < -20000){
-				txtView.setBackgroundColor(R.color.red1);
-			} else {
-				txtView.setBackgroundColor(R.color.blue1);
-			}
 			// x axis value is Red dot
 			drawPoint(TYPE_RED, mCurrentDrawingX, accel[i] + mMaxValue);
 			drawLine(TYPE_RED, PrevDrawingX, mCurrentDrawingX, accel[i-3] + mMaxValue, accel[i] + mMaxValue);
