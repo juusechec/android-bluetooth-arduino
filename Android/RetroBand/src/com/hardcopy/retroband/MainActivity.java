@@ -56,6 +56,7 @@ import android.support.v4.view.ViewPager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -83,6 +84,8 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 
 	// Refresh timer
 	private Timer mRefreshTimer = null;
+
+	private double sumAnterior = -1;
 
 	/*****************************************************
 	 * Overrided methods
@@ -339,6 +342,10 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 		}
 	}
 
+	public static double magnitudSum(int[] vector) {
+		return Math.sqrt(Math.pow(vector[0], 2) + Math.pow(vector[1], 2) + Math.pow(vector[2], 2));
+	}
+
 	public void procesarXYZ(int[] accel) {
 		if (accel == null || accel.length < 3)
 			return;
@@ -354,7 +361,35 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 		// for(int i=3; i<accel.length; i+=3) {
 		//
 		// }
+		procesarSum(accel);
 		guardarDatos(accel);
+	}
+
+	public void procesarSum(int[] accel) {
+		TextView txtView = (TextView) findViewById(R.id.text_limite);
+		txtView.setText("Listo");
+
+		EditText ediView = (EditText) findViewById(R.id.edit_limite);
+
+		double sum = magnitudSum(accel);
+		double pendiente = sumAnterior - sum;
+		txtView.setText(String.valueOf(Math.abs(pendiente)));
+		int limite = 6000;
+		String valor = (String) ediView.getText().toString();
+		if (!valor.equals("")) {
+			try {				
+				limite = Integer.parseInt(valor);
+			} catch (Exception ex) {
+				Log.e("Cast", "Valor : " + valor);
+			}
+		}
+		if (sumAnterior != -1 && Math.abs(pendiente) > limite) {// Se cayo la
+																// persona
+			txtView.setBackgroundColor(Color.parseColor("#FF0000"));
+		} else {// Todo esta bien
+			txtView.setBackgroundColor(Color.parseColor("#00FF00"));
+		}
+		sumAnterior = sum;
 	}
 
 	public void guardarDatos(int[] accel) {
@@ -363,7 +398,11 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 
 			File f = new File(ruta_sd.getAbsolutePath(), "no_fallout.txt");
 
-			OutputStreamWriter fout = new OutputStreamWriter(new FileOutputStream(f));
+			FileOutputStream fos = new FileOutputStream(f, true);// new
+																	// FileOutputStream(f);override
+
+			OutputStreamWriter fout = new OutputStreamWriter(fos);
+
 			String texto = String.valueOf(accel[0]) + "," + String.valueOf(accel[1]) + "," + String.valueOf(accel[3])
 					+ "\n";
 			// System.out.print(texto);

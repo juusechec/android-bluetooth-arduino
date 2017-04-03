@@ -60,6 +60,28 @@
             android:columnCount="1" >
 
             <TextView
+                android:id="@+id/text_limite"
+                android:layout_width="80dp"
+                android:layout_column="0"
+                android:layout_gravity="left|center_vertical"
+                android:layout_row="0"
+                android:text="Limite:" />
+
+            <EditText
+                android:id="@+id/edit_limite"
+                android:layout_column="0"
+                android:layout_gravity="right|top"
+                android:layout_row="0"
+                android:ems="10" />
+
+        </GridLayout>
+
+        <GridLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:columnCount="1" >
+
+            <TextView
                 android:id="@+id/text_desc_render1"
                 android:layout_width="152dp"
                 android:layout_height="wrap_content"
