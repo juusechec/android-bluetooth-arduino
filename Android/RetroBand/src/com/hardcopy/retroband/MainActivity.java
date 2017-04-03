@@ -22,6 +22,8 @@ import java.io.OutputStreamWriter;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import org.glud.Email;
+
 import com.hardcopy.retroband.contents.ActivityReport;
 import com.hardcopy.retroband.contents.ContentObject;
 import com.hardcopy.retroband.fragments.GraphFragment;
@@ -56,10 +58,13 @@ import android.support.v4.view.ViewPager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+
 
 public class MainActivity extends FragmentActivity implements ActionBar.TabListener, IFragmentListener {
 
@@ -377,7 +382,7 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 		int limite = 6000;
 		String valor = (String) ediView.getText().toString();
 		if (!valor.equals("")) {
-			try {				
+			try {
 				limite = Integer.parseInt(valor);
 			} catch (Exception ex) {
 				Log.e("Cast", "Valor : " + valor);
@@ -385,13 +390,14 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 		}
 		if (sumAnterior != -1 && Math.abs(pendiente) > limite) {// Se cayo la
 																// persona
+			//enviarEmail();
 			txtView.setBackgroundColor(Color.parseColor("#FF0000"));
 		} else {// Todo esta bien
 			txtView.setBackgroundColor(Color.parseColor("#00FF00"));
 		}
 		sumAnterior = sum;
 	}
-
+	
 	public void guardarDatos(int[] accel) {
 		try {
 			File ruta_sd = Environment.getExternalStorageDirectory();
@@ -541,5 +547,24 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 			});
 		}
 	}
-
+	
+	/** Called when the user touches the button */
+	public void onClickButton1(View view) {
+	    // Do something in response to button click
+		enviarEmail();
+	}
+	
+	public void enviarEmail(){
+		// Poner aquí algoritmos de pruebas lejos de la interfaz
+		String mensaje = "Hola, me he caido.";
+		String subject = "ALERTA no-fallout";
+		String correo = "dibujatuvida-conpasion@yahoo.es";
+		try {
+			Log.e("EMAIL", "Enviando correo a: " + correo + ".");
+			Email.sendMessage(mensaje, subject, correo); // Static!! No necesita instancia (new Email)
+			Log.e("EMAIL", "He enviado un correo a: " + correo + ".");
+		} catch (Exception e) {
+			Log.e("EMAIL", "NO se ha enviado el correo a: " + correo + ".");
+		}
+	}
 }
