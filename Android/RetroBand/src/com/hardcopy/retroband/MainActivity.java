@@ -22,7 +22,11 @@ import java.io.OutputStreamWriter;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import javax.mail.AuthenticationFailedException;
+import javax.mail.MessagingException;
+
 import org.glud.Email;
+import org.glud.Mail;
 
 import com.hardcopy.retroband.contents.ActivityReport;
 import com.hardcopy.retroband.contents.ContentObject;
@@ -47,6 +51,7 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.res.Configuration;
 import android.graphics.Color;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -63,8 +68,6 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
-
-
 
 public class MainActivity extends FragmentActivity implements ActionBar.TabListener, IFragmentListener {
 
@@ -390,14 +393,14 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 		}
 		if (sumAnterior != -1 && Math.abs(pendiente) > limite) {// Se cayo la
 																// persona
-			//enviarEmail();
+			// enviarEmail();
 			txtView.setBackgroundColor(Color.parseColor("#FF0000"));
 		} else {// Todo esta bien
 			txtView.setBackgroundColor(Color.parseColor("#00FF00"));
 		}
 		sumAnterior = sum;
 	}
-	
+
 	public void guardarDatos(int[] accel) {
 		try {
 			File ruta_sd = Environment.getExternalStorageDirectory();
@@ -547,24 +550,66 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 			});
 		}
 	}
-	
+
 	/** Called when the user touches the button */
 	public void onClickButton1(View view) {
-	    // Do something in response to button click
+		// Do something in response to button click
 		enviarEmail();
 	}
-	
-	public void enviarEmail(){
-		// Poner aquí algoritmos de pruebas lejos de la interfaz
-		String mensaje = "Hola, me he caido.";
-		String subject = "ALERTA no-fallout";
-		String correo = "dibujatuvida-conpasion@yahoo.es";
+
+	public void enviarEmail() {
+		String[] correos = { "dibujatuvida-conpasion@yahoo.es" };
+		SendEmailAsyncTask email = new SendEmailAsyncTask();
+		email.activity = this;
+		email.m = new Mail();
+		email.m.set_to(correos);
+		email.execute();
+	}
+}
+
+// https://developer.android.com/reference/android/os/AsyncTask.html
+class SendEmailAsyncTask extends AsyncTask<Void, Void, Boolean> {
+	Mail m;
+	MainActivity activity;
+
+	public SendEmailAsyncTask() {
+	}
+
+	@Override
+	protected Boolean doInBackground(Void... params) {
+		displayMessage("Enviando...");
 		try {
-			Log.e("EMAIL", "Enviando correo a: " + correo + ".");
-			Email.sendMessage(mensaje, subject, correo); // Static!! No necesita instancia (new Email)
-			Log.e("EMAIL", "He enviado un correo a: " + correo + ".");
+			if (m.send()) {
+				displayMessage("Email enviado.");
+			} else {
+				displayMessage("Falló al enviar email.");
+			}
+			return true;
+		} catch (AuthenticationFailedException e) {
+			Log.e(SendEmailAsyncTask.class.getName(), "Bad account details");
+			e.printStackTrace();
+			displayMessage("Authentication failed.");
+			return false;
+		} catch (MessagingException e) {
+			Log.e(SendEmailAsyncTask.class.getName(), "Email failed");
+			e.printStackTrace();
+			displayMessage("Email failed to send.");
+			return false;
 		} catch (Exception e) {
-			Log.e("EMAIL", "NO se ha enviado el correo a: " + correo + ".");
+			e.printStackTrace();
+			displayMessage("Unexpected error occured.");
+			Log.e("EMAIL", "exception: " + e.getMessage());
+			Log.e("EMAIL", "exception: " + e.toString());
+			return false;
 		}
 	}
+	
+	public void displayMessage(final String mensaje) {
+		activity.runOnUiThread(new Runnable() {
+			public void run() {
+				Toast.makeText(activity.getApplicationContext(), mensaje, Toast.LENGTH_SHORT).show();
+			}
+		});
+	}
+
 }
