@@ -108,12 +108,23 @@
 
             <TextView
                 android:id="@+id/text_indicador"
-                android:layout_width="160dp"
+                android:layout_width="match_parent"
                 android:layout_height="32dp"
                 android:layout_column="0"
                 android:layout_gravity="left|top"
                 android:layout_row="0"
                 android:text="Cargando..." />
+
+            <Button
+                android:id="@+id/buttonstart"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_height="29dp"
+                android:layout_column="0"
+                android:layout_gravity="center_horizontal|top"
+                android:layout_row="0"
+                android:onClick="onClickButton2"
+                android:text="Grabar"
+                android:textSize="9sp" />
 
         </GridLayout>
         

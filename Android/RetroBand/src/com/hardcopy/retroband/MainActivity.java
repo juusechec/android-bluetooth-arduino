@@ -19,13 +19,15 @@ package com.hardcopy.retroband;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
 
 import javax.mail.AuthenticationFailedException;
 import javax.mail.MessagingException;
 
-import org.glud.Email;
 import org.glud.Mail;
 
 import com.hardcopy.retroband.contents.ActivityReport;
@@ -41,6 +43,7 @@ import com.hardcopy.retroband.utils.Logs;
 import com.hardcopy.retroband.utils.RecycleUtils;
 import com.hardcopy.retroband.utils.Utils;
 
+import android.R.bool;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.app.FragmentTransaction;
@@ -64,6 +67,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -79,6 +83,10 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 	private RetroBandService mService;
 	private Utils mUtils;
 	private ActivityHandler mActivityHandler;
+
+	// Guardar en archivo.
+	private boolean grabarArchivo = false;
+	private String nombreArchivo = "no_fallout.txt";
 
 	// Global
 
@@ -370,7 +378,15 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 		//
 		// }
 		procesarSum(accel);
-		guardarDatos(accel);
+		if (grabarArchivo == true) {
+			guardarDatos(accel);
+		} else {
+			// actualiza el nombre con la fecha
+			Date date = new Date();
+			DateFormat hourdateFormat = new SimpleDateFormat("HH:mm:ss dd/MM/yyyy");
+			System.out.println("Hora y fecha: " + hourdateFormat.format(date));
+			nombreArchivo = "no_fallout_" + hourdateFormat.format(date) + ".txt";
+		}
 	}
 
 	public void procesarSum(int[] accel) {
@@ -565,6 +581,27 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 		email.m.set_to(correos);
 		email.execute();
 	}
+	/* Termina */
+
+	/* Empieza boton 2, solo se necesita cambiar nombre */
+	/** Called when the user touches the button */
+	public void onClickButton2(View view) {
+		// Do something in response to button click
+		Button p1_button = (Button)findViewById(R.id.buttonstart);
+		if (grabarArchivo) {
+			grabarArchivo = false;
+			displayMessage("Desactivado");
+			p1_button.setText("Grabar");
+		} else {
+			grabarArchivo = true;
+			displayMessage("Activado");
+			p1_button.setText("Detener");
+		}
+	}
+
+	public void displayMessage(final String mensaje) {
+		Toast.makeText(getApplicationContext(), mensaje, Toast.LENGTH_SHORT).show();
+	}
 }
 
 // https://developer.android.com/reference/android/os/AsyncTask.html
@@ -582,7 +619,7 @@ class SendEmailAsyncTask extends AsyncTask<Void, Void, Boolean> {
 			if (m.send()) {
 				displayMessage("Email enviado.");
 			} else {
-				displayMessage("Falló al enviar email.");
+				displayMessage("Fallo al enviar email.");
 			}
 			return true;
 		} catch (AuthenticationFailedException e) {
@@ -603,7 +640,7 @@ class SendEmailAsyncTask extends AsyncTask<Void, Void, Boolean> {
 			return false;
 		}
 	}
-	
+
 	public void displayMessage(final String mensaje) {
 		activity.runOnUiThread(new Runnable() {
 			public void run() {

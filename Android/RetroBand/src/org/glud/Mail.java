@@ -50,7 +50,7 @@ public class Mail extends javax.mail.Authenticator {
 		_sport = "465"; // default socketfactory port
 
 		_user = "no.fallout@yandex.com"; // username
-		_pass = "202G3Huo1M2jwn2ozFyAyl66Qk199UlJ"; // password
+		_pass = "X9xSd4K8pUPYbVnVUeVfUgXUgfH598aR"; // password
 		_from = "no.fallout@yandex.com"; // email sent from
 		_subject = "Hola"; // email subject
 		_body = "Hello :D"; // email body
