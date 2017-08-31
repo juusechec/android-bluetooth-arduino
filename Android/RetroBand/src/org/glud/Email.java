@@ -40,7 +40,7 @@ public class Email {
 		Properties props = new Properties();
 		// Nombre del host de correo, es smtp.gmail.com
 		props.setProperty("mail.smtp.host", "smtp.yandex.com");
-		// TLS si está disponible
+		// TLS si esta disponible
 		props.setProperty("mail.smtp.starttls.enable", "true");
 		// Puerto de gmail para envio de correos
 		props.setProperty("mail.smtp.port", "465");
@@ -48,7 +48,7 @@ public class Email {
 		props.setProperty("mail.smtp.user", dt);
 		// Si requiere o no usuario y password para conectarse.
 		props.setProperty("mail.smtp.auth", "true");
-		// Para conexión con SSL
+		// Para conexion con SSL
 		props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
 
 		Session session = Session.getDefaultInstance(props);
@@ -70,7 +70,7 @@ public class Email {
 			Address address2 = new InternetAddress(correo, false);
 			message.addRecipient(Message.RecipientType.TO, address2);
 			Transport t = session.getTransport("smtp");
-			t.connect(dt, "202G3Huo1M2jwn2ozFyAyl66Qk199UlJ");
+			t.connect(dt, "X9xSd4K8pUPYbVnVUeVfUgXUgfH598aR");
 			t.sendMessage(message, message.getAllRecipients());
 			t.close();
 			rpta = true;

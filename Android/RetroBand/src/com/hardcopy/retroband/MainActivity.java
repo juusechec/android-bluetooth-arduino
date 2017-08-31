@@ -43,7 +43,6 @@ import com.hardcopy.retroband.utils.Logs;
 import com.hardcopy.retroband.utils.RecycleUtils;
 import com.hardcopy.retroband.utils.Utils;
 
-import android.R.bool;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.app.FragmentTransaction;
@@ -368,28 +367,23 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 
 		TextView txtView = (TextView) findViewById(R.id.text_indicador);
 		txtView.setText("Listo");
-
-		if (accel[1] < 0) {// Eje Y
-			txtView.setBackgroundColor(Color.parseColor("#FF0000"));
-		} else {
-			txtView.setBackgroundColor(Color.parseColor("#00FF00"));
-		}
-		// for(int i=3; i<accel.length; i+=3) {
-		//
-		// }
+		txtView.setBackgroundColor(Color.parseColor("#00FF00")); //Verde
+		
 		procesarSum(accel);
 		if (grabarArchivo == true) {
 			guardarDatos(accel);
 		} else {
 			// actualiza el nombre con la fecha
 			Date date = new Date();
-			DateFormat hourdateFormat = new SimpleDateFormat("HH:mm:ss dd/MM/yyyy");
+			DateFormat hourdateFormat = new SimpleDateFormat("dd_MM_yyyy__HH_mm_ss");
 			System.out.println("Hora y fecha: " + hourdateFormat.format(date));
 			nombreArchivo = "no_fallout_" + hourdateFormat.format(date) + ".txt";
 		}
 	}
 
 	public void procesarSum(int[] accel) {
+		// Está mal porque se hace a todo el paquete de más o menos 20 muestras/seg...
+		// hay que procesarlos individuales.
 		TextView txtView = (TextView) findViewById(R.id.text_limite);
 		txtView.setText("Listo");
 
@@ -398,7 +392,7 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 		double sum = magnitudSum(accel);
 		double pendiente = sumAnterior - sum;
 		txtView.setText(String.valueOf(Math.abs(pendiente)));
-		int limite = 6000;
+		int limite = 25000;
 		String valor = (String) ediView.getText().toString();
 		if (!valor.equals("")) {
 			try {
@@ -407,9 +401,8 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 				Log.e("Cast", "Valor : " + valor);
 			}
 		}
-		if (sumAnterior != -1 && Math.abs(pendiente) > limite) {// Se cayo la
-																// persona
-			// enviarEmail();
+		if (sumAnterior != -1 && Math.abs(pendiente) > limite) {// Se cayo la persona
+			enviarEmail();
 			txtView.setBackgroundColor(Color.parseColor("#FF0000"));
 		} else {// Todo esta bien
 			txtView.setBackgroundColor(Color.parseColor("#00FF00"));
@@ -421,18 +414,19 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 		try {
 			File ruta_sd = Environment.getExternalStorageDirectory();
 
-			File f = new File(ruta_sd.getAbsolutePath(), "no_fallout.txt");
+			File f = new File(ruta_sd.getAbsolutePath(), nombreArchivo);
 
 			FileOutputStream fos = new FileOutputStream(f, true);// new
 																	// FileOutputStream(f);override
 
 			OutputStreamWriter fout = new OutputStreamWriter(fos);
-
-			String texto = String.valueOf(accel[0]) + "," + String.valueOf(accel[1]) + "," + String.valueOf(accel[3])
-					+ "\n";
-			// System.out.print(texto);
-
-			fout.write(texto);
+			
+			for(int i=3; i<accel.length; i+=3) {				
+				String texto = String.valueOf(accel[i]) + "," + String.valueOf(accel[i+1]) + "," + String.valueOf(accel[i+2])
+				+ "\n";
+				// System.out.print(texto);
+				fout.write(texto);
+			}
 			fout.close();
 		} catch (Exception ex) {
 			Log.e("Ficheros", "Error al escribir fichero a tarjeta SD");
@@ -595,6 +589,7 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 		} else {
 			grabarArchivo = true;
 			displayMessage("Activado");
+			displayMessage("Guardando como: " + nombreArchivo);
 			p1_button.setText("Detener");
 		}
 	}
