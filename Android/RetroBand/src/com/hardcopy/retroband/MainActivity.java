@@ -19,8 +19,10 @@ package com.hardcopy.retroband;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
+import java.lang.reflect.Array;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -86,6 +88,12 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 	// Guardar en archivo.
 	private boolean grabarArchivo = false;
 	private String nombreArchivo = "no_fallout.txt";
+	
+	// Datos para consumir
+	private int[] xRecord = new int[80];
+	private int[] yRecord = new int[80];
+	private int[] zRecord = new int[80];
+	private int remainingRecords = 80;
 
 	// Global
 
@@ -364,12 +372,22 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 	public void procesarXYZ(int[] accel) {
 		if (accel == null || accel.length < 3)
 			return;
-
+		// Viene un arreglo de [x1,y1,z1,x2,y2,z2,x3,y3,z3,...,x_n,y_n,z_n]
 		TextView txtView = (TextView) findViewById(R.id.text_indicador);
 		txtView.setText("Listo");
 		txtView.setBackgroundColor(Color.parseColor("#00FF00")); //Verde
 		
-		procesarSum(accel);
+		for(int i=0; i<accel.length; i+=3) {			
+			int x = accel[i];
+			int y = accel[i+1];
+			int z = accel[i+2];
+			int[] vector = {x,y,z};
+			//procesarSum(vector);
+			appendRecordVector(vector);
+		}
+		
+		procesarMuestra();//se puede ejecutar en cualquier lado
+		
 		if (grabarArchivo == true) {
 			guardarDatos(accel);
 		} else {
@@ -381,16 +399,16 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 		}
 	}
 
-	public void procesarSum(int[] accel) {
-		// Está mal porque se hace a todo el paquete de más o menos 20 muestras/seg...
-		// hay que procesarlos individuales.
+	public void procesarSum(int[] vector) {
+		// vector es un arreglo de 3 [x_#,y_#,z_#]
 		TextView txtView = (TextView) findViewById(R.id.text_limite);
 		txtView.setText("Listo");
 
 		EditText ediView = (EditText) findViewById(R.id.edit_limite);
 
-		double sum = magnitudSum(accel);
+		double sum = magnitudSum(vector);
 		double pendiente = sumAnterior - sum;
+		// si no está definido, se usa el predeterminado de int limite=25000
 		txtView.setText(String.valueOf(Math.abs(pendiente)));
 		int limite = 25000;
 		String valor = (String) ediView.getText().toString();
@@ -421,7 +439,7 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 
 			OutputStreamWriter fout = new OutputStreamWriter(fos);
 			
-			for(int i=3; i<accel.length; i+=3) {				
+			for(int i=0; i<accel.length; i+=3) {				
 				String texto = String.valueOf(accel[i]) + "," + String.valueOf(accel[i+1]) + "," + String.valueOf(accel[i+2])
 				+ "\n";
 				// System.out.print(texto);
@@ -432,6 +450,105 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 			Log.e("Ficheros", "Error al escribir fichero a tarjeta SD");
 		}
 	}
+	
+	public int[] getXRecord() {
+		if (this.remainingRecords == 0) {
+			return this.xRecord;
+		} else {
+			return new int[0];
+		}
+	}
+	
+	public int[] getYRecord() {
+		if (this.remainingRecords == 0) {
+			return this.yRecord;
+		} else {
+			return new int[0];
+		}
+	}
+	
+	public int[] getZRecord() {
+		if (this.remainingRecords == 0) {
+			return this.zRecord;
+		} else {
+			return new int[0];
+		}
+	}
+	
+	public void appendRecordVector(int[] vector) {
+		addToRecordSlice(vector);
+		if (!(this.remainingRecords == 0)) {// si no está lleno, sigue disminuyendo remainingRecords
+			// reduce en 1 que el Record este lleno
+			this.remainingRecords = this.remainingRecords-1;
+		}
+	}
+	
+	private void addToRecordSlice(int[] vector) {
+		int[] xCuted = Arrays.copyOfRange(this.xRecord, 1, this.xRecord.length);
+		int[] yCuted = Arrays.copyOfRange(this.yRecord, 1, this.yRecord.length);
+		int[] zCuted = Arrays.copyOfRange(this.zRecord, 1, this.zRecord.length);
+		int[] xVector = {vector[0]};
+		int[] yVector = {vector[1]};
+		int[] zVector = {vector[2]};
+		
+		this.xRecord = concatenate(xCuted, xVector);
+		this.yRecord = concatenate(yCuted, yVector);
+		this.zRecord = concatenate(zCuted, zVector);
+		// https://stackoverflow.com/questions/11001720/get-only-part-of-an-array-in-java
+	}
+	
+	// Generic function to merge arrays of same type in Java
+	public static int[] concatenate(int[] first, int[] second){
+		//example: int[] a = {1,2,3}; int[] b = {5,6,7}; int [] c = concatenate(a,b);
+		int[] ob = (int[]) Array.newInstance(first.getClass().getComponentType(),                      
+					first.length + second.length);
+		System.arraycopy(first, 0, ob, 0, first.length);
+		System.arraycopy(second, 0, ob, first.length, second.length);
+		return ob;
+	}
+	
+	public void procesarMuestra() {
+		int[] muestraX = getXRecord();
+		int[] muestraY = getYRecord();
+		int maxX = getMax(muestraX);
+		int minY = getMin(muestraY);
+		
+		boolean fallout = false;
+		if (minY >= -1184) {
+			if (minY < 16000) {
+				fallout = false;
+			} else {
+				if (maxX >= 562) {
+					fallout = false;
+				} else {
+					fallout = true;
+				}
+			}
+		} else {
+			fallout = true;
+		}
+		
+		if (fallout == true) { // se cayó
+			enviarEmail();
+		}
+	}
+	
+	public static int getMax(int[] vectoxAxis) {
+		int max = vectoxAxis[0];
+		for(int i=1;i<vectoxAxis.length;i++) {
+		    max = Math.max(vectoxAxis[i], max);
+		}
+		return max;
+	}
+	
+	public static int getMin(int[] vectoxAxis) {
+		int min = vectoxAxis[0];
+		for(int i=1;i<vectoxAxis.length;i++) {
+		    min = Math.min(vectoxAxis[i], min);
+		}
+		return min;
+	}
+	
 
 	/*****************************************************
 	 * Public classes
