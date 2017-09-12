@@ -373,9 +373,9 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 		if (accel == null || accel.length < 3)
 			return;
 		// Viene un arreglo de [x1,y1,z1,x2,y2,z2,x3,y3,z3,...,x_n,y_n,z_n]
-		TextView txtView = (TextView) findViewById(R.id.text_indicador);
-		txtView.setText("Listo");
-		txtView.setBackgroundColor(Color.parseColor("#00FF00")); //Verde
+		TextView textIndicatorView = (TextView) findViewById(R.id.text_indicador);
+		textIndicatorView.setText("Listo");
+		textIndicatorView.setBackgroundColor(Color.parseColor("#0000FF")); //Azul
 		
 		for(int i=0; i<accel.length; i+=3) {			
 			int x = accel[i];
@@ -401,17 +401,17 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 
 	public void procesarSum(int[] vector) {
 		// vector es un arreglo de 3 [x_#,y_#,z_#]
-		TextView txtView = (TextView) findViewById(R.id.text_limite);
-		txtView.setText("Listo");
+		TextView textLimiteView = (TextView) findViewById(R.id.text_limite);
+		textLimiteView.setText("Sumando...");
 
-		EditText ediView = (EditText) findViewById(R.id.edit_limite);
+		EditText editLimiteView = (EditText) findViewById(R.id.edit_limite);
 
 		double sum = magnitudSum(vector);
 		double pendiente = sumAnterior - sum;
 		// si no está definido, se usa el predeterminado de int limite=25000
-		txtView.setText(String.valueOf(Math.abs(pendiente)));
+		textLimiteView.setText(String.valueOf(Math.abs(pendiente)));
 		int limite = 25000;
-		String valor = (String) ediView.getText().toString();
+		String valor = (String) editLimiteView.getText().toString();
 		if (!valor.equals("")) {
 			try {
 				limite = Integer.parseInt(valor);
@@ -421,9 +421,9 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 		}
 		if (sumAnterior != -1 && Math.abs(pendiente) > limite) {// Se cayo la persona
 			enviarEmail();
-			txtView.setBackgroundColor(Color.parseColor("#FF0000"));
+			textLimiteView.setBackgroundColor(Color.parseColor("#FF0000"));//Rojo
 		} else {// Todo esta bien
-			txtView.setBackgroundColor(Color.parseColor("#00FF00"));
+			textLimiteView.setBackgroundColor(Color.parseColor("#00FF00"));//Verde
 		}
 		sumAnterior = sum;
 	}
@@ -508,6 +508,9 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 	}
 	
 	public void procesarMuestra() {
+		TextView textLimiteView = (TextView) findViewById(R.id.text_limite);
+		//textView.setText("Procesando...");
+		
 		int[] muestraX = getXRecord();
 		int[] muestraY = getYRecord();
 		int maxX = getMax(muestraX);
@@ -528,8 +531,12 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 			fallout = true;
 		}
 		
+		textLimiteView.setText("minY:"+String.valueOf(minY)+",maxX:"+String.valueOf(maxX));
 		if (fallout == true) { // se cayó
 			enviarEmail();
+			textLimiteView.setBackgroundColor(Color.parseColor("#FF0000"));//Rojo
+		} else {
+			textLimiteView.setBackgroundColor(Color.parseColor("#00FF00"));//Verde
 		}
 	}
 	
