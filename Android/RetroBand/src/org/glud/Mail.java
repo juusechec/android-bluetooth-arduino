@@ -155,11 +155,11 @@ public class Mail extends javax.mail.Authenticator {
 	}
 
 	// the getters and setters
-	public String getBody() {
+	public String get_body() {
 		return _body;
 	}
 
-	public void setBody(String _body) {
+	public void set_body(String _body) {
 		this._body = _body;
 	}
 

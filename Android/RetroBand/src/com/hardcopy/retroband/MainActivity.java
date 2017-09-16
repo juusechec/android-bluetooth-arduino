@@ -94,6 +94,7 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 	private int[] yRecord = new int[80];
 	private int[] zRecord = new int[80];
 	private int remainingRecords = 80;
+	private Date lastDate = new Date();
 
 	// Global
 
@@ -375,14 +376,14 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 		// Viene un arreglo de [x1,y1,z1,x2,y2,z2,x3,y3,z3,...,x_n,y_n,z_n]
 		TextView textIndicatorView = (TextView) findViewById(R.id.text_indicador);
 		textIndicatorView.setText("Listo");
-		textIndicatorView.setBackgroundColor(Color.parseColor("#0000FF")); //Azul
+		textIndicatorView.setBackgroundColor(Color.parseColor("#6495ED")); //Azul
 		
 		for(int i=0; i<accel.length; i+=3) {			
 			int x = accel[i];
 			int y = accel[i+1];
 			int z = accel[i+2];
 			int[] vector = {x,y,z};
-			//procesarSum(vector);
+			procesarSum(vector);
 			appendRecordVector(vector);
 		}
 		
@@ -420,7 +421,8 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 			}
 		}
 		if (sumAnterior != -1 && Math.abs(pendiente) > limite) {// Se cayo la persona
-			enviarEmail();
+			String mensaje = "Alerta valor absoluto pendiente: " + String.valueOf(Math.abs(pendiente));
+			enviarEmailPersonalizado("Alerta Caida (Umbral Energía).", mensaje);
 			textLimiteView.setBackgroundColor(Color.parseColor("#FF0000"));//Rojo
 		} else {// Todo esta bien
 			textLimiteView.setBackgroundColor(Color.parseColor("#00FF00"));//Verde
@@ -508,35 +510,47 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 	}
 	
 	public void procesarMuestra() {
-		TextView textLimiteView = (TextView) findViewById(R.id.text_limite);
-		//textView.setText("Procesando...");
+		TextView textIndicadorView = (TextView) findViewById(R.id.text_indicador);
+		textIndicadorView.setText("Procesando...");
 		
 		int[] muestraX = getXRecord();
 		int[] muestraY = getYRecord();
-		int maxX = getMax(muestraX);
-		int minY = getMin(muestraY);
-		
-		boolean fallout = false;
-		if (minY >= -1184) {
-			if (minY < 16000) {
-				fallout = false;
-			} else {
-				if (maxX >= 562) {
+		if (muestraX.length > 0 && muestraY.length > 0) {
+			//int maxX = getMax(muestraX);
+			//int minY = getMin(muestraY);
+			double varX = getVariance(muestraX);
+			double varY = getVariance(muestraY);
+			
+			textIndicadorView.setText("Terminado!");
+			boolean fallout = false;
+			
+			if (varY < 4449) {
+				if (varY >= 59) {
 					fallout = false;
 				} else {
-					fallout = true;
+					if (varX < 76) {
+						fallout = false;
+					} else {
+						fallout = true;
+					}
 				}
+			} else {
+				fallout = true;
 			}
-		} else {
-			fallout = true;
-		}
-		
-		textLimiteView.setText("minY:"+String.valueOf(minY)+",maxX:"+String.valueOf(maxX));
-		if (fallout == true) { // se cayó
-			enviarEmail();
-			textLimiteView.setBackgroundColor(Color.parseColor("#FF0000"));//Rojo
-		} else {
-			textLimiteView.setBackgroundColor(Color.parseColor("#00FF00"));//Verde
+			
+			textIndicadorView.setText("varX:"+String.valueOf(varX)+",varY:"+String.valueOf(varY));
+			if (fallout == true) { // se cayó
+				Date actualDate = new Date();
+				long secondsBetween = (actualDate.getTime() - lastDate.getTime()) / 1000;
+				if (secondsBetween > 5) { // mayor a 5 seg
+					String mensaje = "Alerta variables: " +"varX:"+String.valueOf(varX)+", varY:"+String.valueOf(varY);
+					enviarEmailPersonalizado("Alerta Caida (Árbol de Decisiones).", mensaje);
+					lastDate = new Date(); // hora actual
+				}				
+				textIndicadorView.setBackgroundColor(Color.parseColor("#FF0000")); // Rojo
+			} else {
+				textIndicadorView.setBackgroundColor(Color.parseColor("#00FF00")); // Verde
+			}
 		}
 	}
 	
@@ -556,6 +570,22 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 		return min;
 	}
 	
+	public static double getMean(int [] vectorAxis) {
+		double sum = 0;
+		for (int i = 0; i < vectorAxis.length; i++) {
+			sum += vectorAxis[i];
+		}
+		return sum/vectorAxis.length;
+	}
+	
+	public static double getVariance(int [] vectorAxis) {
+		double mean = getMean(vectorAxis);
+		double sumatory = 0; 
+		for (int i = 0; i < vectorAxis.length; i++) {
+			sumatory += Math.pow(vectorAxis[i] - mean, 2);
+		}
+		return sumatory/vectorAxis.length;
+	}
 
 	/*****************************************************
 	 * Public classes
@@ -686,7 +716,7 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 	}
 
 	/** Called when the user touches the button */
-	public void onClickButton1(View view) {
+	public void onClickButtonEmail(View view) {
 		// Do something in response to button click
 		enviarEmail();
 	}
@@ -696,16 +726,27 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 		SendEmailAsyncTask email = new SendEmailAsyncTask();
 		email.activity = this;
 		email.m = new Mail();
-		email.m.set_to(correos);
+		email.m.set_to(correos); //Enviar a correos.
+		email.execute();
+	}
+	
+	public void enviarEmailPersonalizado(String asunto, String mensaje) {
+		String[] correos = { "dibujatuvida-conpasion@yahoo.es" };
+		SendEmailAsyncTask email = new SendEmailAsyncTask();
+		email.activity = this;
+		email.m = new Mail();
+		email.m.set_to(correos); //Enviar a correos.
+		email.m.set_subject(asunto); //Establecer asunto
+		email.m.set_body(mensaje); //Establecer mensaje
 		email.execute();
 	}
 	/* Termina */
 
 	/* Empieza boton 2, solo se necesita cambiar nombre */
 	/** Called when the user touches the button */
-	public void onClickButton2(View view) {
+	public void onClickButtonRecord(View view) {
 		// Do something in response to button click
-		Button p1_button = (Button)findViewById(R.id.buttonstart);
+		Button p1_button = (Button)findViewById(R.id.buttonRecord);
 		if (grabarArchivo) {
 			grabarArchivo = false;
 			displayMessage("Desactivado");

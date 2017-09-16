@@ -61,8 +61,8 @@
             
 			<TextView
 			    android:id="@+id/text_limite"
-			    android:layout_width="170dp"
-			    android:layout_height="match_parent"
+			    android:layout_width="163dp"
+			    android:layout_height="34dp"
 			    android:layout_column="0"
 			    android:layout_gravity="left|top"
 			    android:layout_row="0"
@@ -70,21 +70,33 @@
 			
             <EditText
                 android:id="@+id/edit_limite"
-                android:layout_width="86dp"
+                android:layout_width="59dp"
                 android:layout_column="0"
                 android:layout_gravity="right|center_vertical"
-                android:layout_marginRight="60dp"
+                android:layout_marginRight="100dp"
                 android:layout_row="0"
                 android:ems="10" />
 
             <Button
-                android:id="@+id/button1"
-                android:layout_width="61dp"
+                android:id="@+id/buttonRecord"
+                style="?android:attr/buttonStyleSmall"
                 android:layout_height="wrap_content"
                 android:layout_column="0"
-                android:layout_row="0"
                 android:layout_gravity="right|top"
-                android:onClick="onClickButton1"
+                android:layout_row="0"
+                android:onClick="onClickButtonRecord"
+                android:text="Grabar"
+                android:textSize="9sp" />
+
+            <Button
+                android:id="@+id/buttonEmail"
+                android:layout_width="58dp"
+                android:layout_height="match_parent"
+                android:layout_column="0"
+                android:layout_gravity="right|top"
+                android:layout_marginRight="46dp"
+                android:layout_row="0"
+                android:onClick="onClickButtonEmail"
                 android:text="Prueba Email"
                 android:textSize="9sp" />
 
@@ -94,26 +106,6 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:columnCount="1" >
-
-            <TextView
-                android:id="@+id/text_indicador"
-                android:layout_width="match_parent"
-                android:layout_height="32dp"
-                android:layout_column="0"
-                android:layout_gravity="left|top"
-                android:layout_row="0"
-                android:text="Cargando..." />
-
-            <Button
-                android:id="@+id/buttonstart"
-                style="?android:attr/buttonStyleSmall"
-                android:layout_height="29dp"
-                android:layout_column="0"
-                android:layout_gravity="center_horizontal|top"
-                android:layout_row="0"
-                android:onClick="onClickButton2"
-                android:text="Grabar"
-                android:textSize="9sp" />
 
             <TextView
                 android:id="@+id/text_desc_render1"
@@ -128,6 +120,15 @@
                 android:textColor="#bbbbbb"
                 android:textSize="10sp"
                 android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/text_indicador"
+                android:layout_width="140dp"
+                android:layout_height="36dp"
+                android:layout_column="0"
+                android:layout_gravity="left|center_vertical"
+                android:layout_row="0"
+                android:text="Cargando..." />
 
         </GridLayout>
         
