@@ -366,10 +366,6 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 		}
 	}
 
-	public static double magnitudSum(int[] vector) {
-		return Math.sqrt(Math.pow(vector[0], 2) + Math.pow(vector[1], 2) + Math.pow(vector[2], 2));
-	}
-
 	public void procesarXYZ(int[] accel) {
 		if (accel == null || accel.length < 3)
 			return;
@@ -407,7 +403,7 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 
 		EditText editLimiteView = (EditText) findViewById(R.id.edit_limite);
 
-		double sum = magnitudSum(vector);
+		double sum = this.magnitudSum(vector);
 		double pendiente = sumAnterior - sum;
 		// si no está definido, se usa el predeterminado de int limite=25000
 		textLimiteView.setText(String.valueOf(Math.abs(pendiente)));
@@ -422,12 +418,41 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 		}
 		if (sumAnterior != -1 && Math.abs(pendiente) > limite) {// Se cayo la persona
 			String mensaje = "Alerta valor absoluto pendiente: " + String.valueOf(Math.abs(pendiente));
-			enviarEmailPersonalizado("Alerta Caida (Umbral Energía).", mensaje);
+			mensaje += "\r\nEnergia X: " + String.valueOf(this.getEnergy(this.getXRecord()));
+			mensaje += "\r\nEnergia Y: " + String.valueOf(this.getEnergy(this.getYRecord()));
+			mensaje += "\r\nEnergia Z: " + String.valueOf(this.getEnergy(this.getZRecord()));
+			mensaje += "\r\nEnergia VecSum: " + String.valueOf(this.getEnergy(this.getVsumRecord()));
+			// probando con transformada wavelet haar
+			double[] muestraVsum = getVsumRecord();
+			double[] coeficientes = getCoef(muestraVsum);
+			mensaje += "\r\n"+arrayToString(coeficientes);
+			enviarEmailPersonalizado("Alerta Caida (Umbral de la derivada del vector suma).", mensaje);
 			textLimiteView.setBackgroundColor(Color.parseColor("#FF0000"));//Rojo
 		} else {// Todo esta bien
 			textLimiteView.setBackgroundColor(Color.parseColor("#00FF00"));//Verde
 		}
 		sumAnterior = sum;
+	}
+	
+	public int getEnergy(int[] vector) {
+		// http://www.unet.edu.ve/aula10c/Asenales/Unid01/seg02.htm
+		int sum = 0;
+		for (int i = 0; i < vector.length; i++) {
+			sum += Math.pow(vector[i], 2);// sin abs, porque es real
+		}
+		return sum;
+	}
+	
+	public double getEnergy(double[] vector) {
+		int convertedVector[] = new int[vector.length];
+		for (int i = 0; i < vector.length; i++) {
+			convertedVector[i] = (int)vector[i];
+		}
+		return (double)this.getEnergy(convertedVector);
+	}
+	
+	public double magnitudSum(int[] vector) {
+		return Math.sqrt(Math.pow(vector[0], 2) + Math.pow(vector[1], 2) + Math.pow(vector[2], 2));
 	}
 
 	public void guardarDatos(int[] accel) {
@@ -475,6 +500,18 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 		} else {
 			return new int[0];
 		}
+	}
+	
+	public double[] getVsumRecord() {
+		int[] muestraX = getXRecord();
+		int[] muestraY = getYRecord();
+		int[] muestraZ = getZRecord();
+		double[] muestraVsum = new double[muestraX.length];
+		for (int i = 0; i < muestraX.length; i++) {
+			int [] vector = {muestraX[i], muestraX[i], muestraX[i]};
+			muestraVsum[i] = this.magnitudSum(vector);
+		}
+		return muestraVsum;
 	}
 	
 	public void appendRecordVector(int[] vector) {
@@ -544,13 +581,21 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 				long secondsBetween = (actualDate.getTime() - lastDate.getTime()) / 1000;
 				if (secondsBetween > 5) { // mayor a 5 seg
 					String mensaje = "Alerta variables: " +"varX:"+String.valueOf(varX)+", varY:"+String.valueOf(varY);
-					enviarEmailPersonalizado("Alerta Caida (Árbol de Decisiones).", mensaje);
+					mensaje += "\r\nEnergia X: " + String.valueOf(this.getEnergy(this.getXRecord()));
+					mensaje += "\r\nEnergia Y: " + String.valueOf(this.getEnergy(this.getYRecord()));
+					mensaje += "\r\nEnergia Z: " + String.valueOf(this.getEnergy(this.getZRecord()));
+					mensaje += "\r\nEnergia VecSum: " + String.valueOf(this.getEnergy(this.getVsumRecord()));
+					// probando con transformada wavelet haar
+					double[] muestraVsum = getVsumRecord();
+					double[] coeficientes = getCoef(muestraVsum);
+					mensaje += "\r\n"+arrayToString(coeficientes);
+					enviarEmailPersonalizado("Alerta Caida (Arbol de Decisiones con Varianza).", mensaje);
 					lastDate = new Date(); // hora actual
 				}				
 				textIndicadorView.setBackgroundColor(Color.parseColor("#FF0000")); // Rojo
 			} else {
 				textIndicadorView.setBackgroundColor(Color.parseColor("#00FF00")); // Verde
-			}
+			}			
 		}
 	}
 	
@@ -585,6 +630,109 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 			sumatory += Math.pow(vectorAxis[i] - mean, 2);
 		}
 		return sumatory/vectorAxis.length;
+	}
+	
+	public static String arrayToString(double[] myArray) {
+		String text = "";
+		for (int i = 0; i < myArray.length; i++) {
+			text += String.valueOf(myArray[i]) + "\t";
+		}
+		return text;
+	}
+	
+	public static double[] getCoef(double[] vector) {
+		double[][] matrizT = {
+			{ 1, 1, 0, 0, 0, 0, 0, 0 },
+			{ 1, -1, 0, 0, 0, 0, 0, 0 },
+			{ 0, 0, 1, 1, 0, 0, 0, 0 },
+			{ 0, 0, 1, -1, 0, 0, 0, 0 },
+			{ 0, 0, 0, 0, 1, 1, 0, 0 },
+			{ 0, 0, 0, 0, 1, -1, 0, 0 },
+			{ 0, 0, 0, 0, 0, 0, 1, 1 },
+			{ 0, 0, 0, 0, 0, 0, 1, -1 }
+		};
+		int multiplo = (int) (vector.length / 8);
+		double[][] matrizS = new double[8][multiplo];
+		int indice = 0;
+		for (int j = 0; j < multiplo; j++) {
+			for (int i = 0; i < 8; i++) {
+				matrizS[i][j] = vector[indice];
+				indice++;
+			}
+		}
+//		System.out.println("MT------------------");
+//		printMatrix(matrizT);
+//		System.out.println("MS------------------");
+//		printMatrix(matrizS);
+		double[][] x = multMatrix(matrizT, matrizS);
+		x = multMatrixNumber(x, 1 / Math.sqrt(2));
+//		System.out.println("XX-----------------");
+//		printMatrix(x);
+//		System.out.println("------------------");
+		int size = (x.length * x[0].length) / 2;
+		double[] coef = new double[size];
+		int contador = 0;
+		indice = 0;
+		for (int j = 0; j < x[0].length; j++) {
+			for (int i = 0; i < x.length; i++) {			
+				if (contador % 2 == 0) {// par
+					coef[indice++] = x[i][j];
+				}
+				contador++;
+			}
+		}
+		return coef;
+	}
+
+	/**
+	 * Multiplica dos matrices
+	 * 
+	 * @param int[][]
+	 *            A
+	 * @param int[][]
+	 *            B
+	 * @return int[][] producto
+	 */
+	private static double[][] multMatrix(double a[][], double b[][]) {
+		int aRows = a.length, aColumns = a[0].length, bRows = b.length, bColumns = b[0].length;
+
+		if (aColumns != bRows) {
+			throw new IllegalArgumentException("A:Rows: " + aColumns + " did not match B:Columns " + bRows + ".");
+		}
+
+		double[][] resultant = new double[aRows][bColumns];
+
+		for (int i = 0; i < aRows; i++) { // aRow
+			for (int j = 0; j < bColumns; j++) { // bColumn
+				for (int k = 0; k < aColumns; k++) { // aColumn
+					resultant[i][j] += a[i][k] * b[k][j];
+				}
+			}
+		}
+
+		return resultant;
+	}
+	
+	private static double[][] multMatrixNumber(double a[][], double x) {
+		int aRows = a.length, aColumns = a[0].length;
+		double[][] resultant = new double[aRows][aColumns];
+		
+		for (int i = 0; i < aRows; i++) { // aRow
+			for (int j = 0; j < aColumns; j++) { // bColumn
+				resultant[i][j] += a[i][j] * x;
+			}
+		}
+		return resultant;
+	}
+	
+	private static void printMatrix(double a[][]) {
+		for (int i = 0; i < a.length; i++) {
+			for (int j = 0; j < a[0].length; j++) {
+				System.out.print(a[i][j]);
+				System.out.print(" ");
+			}
+			System.out.println();
+		}
 	}
 
 	/*****************************************************
@@ -722,7 +870,7 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 	}
 
 	public void enviarEmail() {
-		String[] correos = { "dibujatuvida-conpasion@yahoo.es" };
+		String[] correos = { "dibujatuvida-conpasion@yahoo.es", "jamesbuck9203@hotmail.com", "diego.andresmancilla@hotmail.com" };
 		SendEmailAsyncTask email = new SendEmailAsyncTask();
 		email.activity = this;
 		email.m = new Mail();
@@ -731,7 +879,7 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 	}
 	
 	public void enviarEmailPersonalizado(String asunto, String mensaje) {
-		String[] correos = { "dibujatuvida-conpasion@yahoo.es" };
+		String[] correos = { "dibujatuvida-conpasion@yahoo.es", "jamesbuck9203@hotmail.com", "diego.andresmancilla@hotmail.com" };
 		SendEmailAsyncTask email = new SendEmailAsyncTask();
 		email.activity = this;
 		email.m = new Mail();
