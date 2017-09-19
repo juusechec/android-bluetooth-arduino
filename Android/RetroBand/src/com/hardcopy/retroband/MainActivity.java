@@ -94,7 +94,12 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 	private int[] yRecord = new int[80];
 	private int[] zRecord = new int[80];
 	private int remainingRecords = 80;
-	private Date lastDate = new Date();
+	private Date lastDateArbol = new Date();
+	private Date lastDatePendiente = new Date();
+	private Date lastDateAmbos = new Date();
+	private boolean estadoPendiente = false;
+	private boolean estadoArbol = false;
+	private boolean estadoSendMail = true;
 
 	// Global
 
@@ -365,6 +370,16 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 			startActivity(intent);
 		}
 	}
+	
+	public void procesarAmbosAlgoritmos() {
+		Date actualDate = new Date();
+		long secondsBetween = (actualDate.getTime() - lastDateAmbos.getTime()) / 1000;
+		if (estadoArbol && estadoPendiente && secondsBetween > 3) {
+			String mensaje = "La persona se ha caido 100% fiable.";
+			enviarEmailPersonalizado("Emergencia Caida (Ambos al Tiempo).", mensaje);
+			lastDateAmbos = new Date();
+		}
+	}
 
 	public void procesarXYZ(int[] accel) {
 		if (accel == null || accel.length < 3)
@@ -381,9 +396,8 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 			int[] vector = {x,y,z};
 			procesarSum(vector);
 			appendRecordVector(vector);
+			procesarMuestra();//se puede ejecutar en cualquier lado
 		}
-		
-		procesarMuestra();//se puede ejecutar en cualquier lado
 		
 		if (grabarArchivo == true) {
 			guardarDatos(accel);
@@ -406,8 +420,8 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 		double sum = this.magnitudSum(vector);
 		double pendiente = sumAnterior - sum;
 		// si no está definido, se usa el predeterminado de int limite=25000
-		textLimiteView.setText(String.valueOf(Math.abs(pendiente)));
-		int limite = 25000;
+		textLimiteView.setText("Pend: " + String.valueOf(Math.abs(pendiente)));
+		int limite = 7000;
 		String valor = (String) editLimiteView.getText().toString();
 		if (!valor.equals("")) {
 			try {
@@ -416,20 +430,29 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 				Log.e("Cast", "Valor : " + valor);
 			}
 		}
-		if (sumAnterior != -1 && Math.abs(pendiente) > limite) {// Se cayo la persona
-			String mensaje = "Alerta valor absoluto pendiente: " + String.valueOf(Math.abs(pendiente));
-			mensaje += "\r\nEnergia X: " + String.valueOf(this.getEnergy(this.getXRecord()));
-			mensaje += "\r\nEnergia Y: " + String.valueOf(this.getEnergy(this.getYRecord()));
-			mensaje += "\r\nEnergia Z: " + String.valueOf(this.getEnergy(this.getZRecord()));
-			mensaje += "\r\nEnergia VecSum: " + String.valueOf(this.getEnergy(this.getVsumRecord()));
-			// probando con transformada wavelet haar
-			double[] muestraVsum = getVsumRecord();
-			double[] coeficientes = getCoef(muestraVsum);
-			mensaje += "\r\n"+arrayToString(coeficientes);
-			enviarEmailPersonalizado("Alerta Caida (Umbral de la derivada del vector suma).", mensaje);
+		Date actualDate = new Date();
+		long secondsBetween = (actualDate.getTime() - lastDatePendiente.getTime()) / 1000;
+		
+		if (sumAnterior != -1 && Math.abs(pendiente) > limite && secondsBetween > 2) {// Se cayo la persona
+			if (estadoSendMail) {
+				String mensaje = "Alerta valor absoluto pendiente: " + String.valueOf(Math.abs(pendiente));
+				mensaje += "\r\nEnergia X: " + String.valueOf(this.getEnergy(this.getXRecord()));
+				mensaje += "\r\nEnergia Y: " + String.valueOf(this.getEnergy(this.getYRecord()));
+				mensaje += "\r\nEnergia Z: " + String.valueOf(this.getEnergy(this.getZRecord()));
+				mensaje += "\r\nEnergia VecSum: " + String.valueOf(this.getEnergy(this.getVsumRecord()));
+				// probando con transformada wavelet haar
+				double[] muestraVsum = getVsumRecord();
+				double[] coeficientes = getCoef(muestraVsum);
+				mensaje += "\r\nCoeficientes:\r\n"+arrayToString(coeficientes);
+				enviarEmailPersonalizado("Alerta Caida (Umbral de la Derivada del Vector Suma).", mensaje);
+				
+			}
 			textLimiteView.setBackgroundColor(Color.parseColor("#FF0000"));//Rojo
-		} else {// Todo esta bien
+			lastDatePendiente = new Date();
+			estadoPendiente = true;
+		} else if (secondsBetween > 2) {// Todo esta bien
 			textLimiteView.setBackgroundColor(Color.parseColor("#00FF00"));//Verde
+			estadoPendiente = false;
 		}
 		sumAnterior = sum;
 	}
@@ -553,19 +576,33 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 		int[] muestraX = getXRecord();
 		int[] muestraY = getYRecord();
 		if (muestraX.length > 0 && muestraY.length > 0) {
-			//int maxX = getMax(muestraX);
-			//int minY = getMin(muestraY);
-			double varX = getVariance(muestraX);
-			double varY = getVariance(muestraY);
+			int maxX = getMax(muestraX);
+			int minY = getMin(muestraY);
+			//double varX = getVariance(muestraX);
+			//double varY = getVariance(muestraY);
 			
 			textIndicadorView.setText("Terminado!");
 			boolean fallout = false;
 			
-			if (varY < 4449) {
-				if (varY >= 59) {
+//			if (varY < 4449) {
+//				if (varY >= 59) {
+//					fallout = false;
+//				} else {
+//					if (varX < 76) {
+//						fallout = false;
+//					} else {
+//						fallout = true;
+//					}
+//				}
+//			} else {
+//				fallout = true;
+//			}
+			
+			if (minY >= 1184) {
+				if (minY < 16000) {
 					fallout = false;
 				} else {
-					if (varX < 76) {
+					if (maxX >= 562) {
 						fallout = false;
 					} else {
 						fallout = true;
@@ -575,26 +612,30 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 				fallout = true;
 			}
 			
-			textIndicadorView.setText("varX:"+String.valueOf(varX)+",varY:"+String.valueOf(varY));
+			textIndicadorView.setText("MaxX:"+String.valueOf(maxX)+", MinY:"+String.valueOf(minY));
 			if (fallout == true) { // se cayó
 				Date actualDate = new Date();
-				long secondsBetween = (actualDate.getTime() - lastDate.getTime()) / 1000;
+				long secondsBetween = (actualDate.getTime() - lastDateArbol.getTime()) / 1000;
 				if (secondsBetween > 5) { // mayor a 5 seg
-					String mensaje = "Alerta variables: " +"varX:"+String.valueOf(varX)+", varY:"+String.valueOf(varY);
-					mensaje += "\r\nEnergia X: " + String.valueOf(this.getEnergy(this.getXRecord()));
-					mensaje += "\r\nEnergia Y: " + String.valueOf(this.getEnergy(this.getYRecord()));
-					mensaje += "\r\nEnergia Z: " + String.valueOf(this.getEnergy(this.getZRecord()));
-					mensaje += "\r\nEnergia VecSum: " + String.valueOf(this.getEnergy(this.getVsumRecord()));
-					// probando con transformada wavelet haar
-					double[] muestraVsum = getVsumRecord();
-					double[] coeficientes = getCoef(muestraVsum);
-					mensaje += "\r\n"+arrayToString(coeficientes);
-					enviarEmailPersonalizado("Alerta Caida (Arbol de Decisiones con Varianza).", mensaje);
-					lastDate = new Date(); // hora actual
+					if (estadoSendMail) {
+						String mensaje = "Alerta variables: " +"MaxX:"+String.valueOf(maxX)+", MinY:"+String.valueOf(minY);
+						mensaje += "\r\nEnergia X: " + String.valueOf(this.getEnergy(this.getXRecord()));
+						mensaje += "\r\nEnergia Y: " + String.valueOf(this.getEnergy(this.getYRecord()));
+						mensaje += "\r\nEnergia Z: " + String.valueOf(this.getEnergy(this.getZRecord()));
+						mensaje += "\r\nEnergia VecSum: " + String.valueOf(this.getEnergy(this.getVsumRecord()));
+						// probando con transformada wavelet haar
+						double[] muestraVsum = getVsumRecord();
+						double[] coeficientes = getCoef(muestraVsum);
+						mensaje += "\r\nCoeficientes:\r\n"+arrayToString(coeficientes);
+						enviarEmailPersonalizado("Alerta Caida (Arbol de Decisiones con Varianza).", mensaje);
+					}
+					lastDateArbol = new Date(); // hora actual
 				}				
 				textIndicadorView.setBackgroundColor(Color.parseColor("#FF0000")); // Rojo
+				estadoArbol = true;
 			} else {
 				textIndicadorView.setBackgroundColor(Color.parseColor("#00FF00")); // Verde
+				estadoArbol = false;
 			}			
 		}
 	}
@@ -904,6 +945,16 @@ public class MainActivity extends FragmentActivity implements ActionBar.TabListe
 			displayMessage("Activado");
 			displayMessage("Guardando como: " + nombreArchivo);
 			p1_button.setText("Detener");
+		}
+	}
+	
+	public void onClickButtonOnOffMail(View view) {	
+		if (estadoSendMail) {
+			estadoSendMail = false;
+			displayMessage("Desactivado");
+		} else {
+			estadoSendMail = true;
+			displayMessage("Activado");
 		}
 	}
 
